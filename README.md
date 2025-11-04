@@ -118,7 +118,7 @@ pipeline {
             agent { label 'compile-node' }
             steps {
                 echo '🔧 Compiling project on compile-node...'
-                git branch: 'main', url: 'https://github.com/Abhishek-2502/task3.git'
+                git branch: 'Exp4', url: 'https://github.com/Abhishek-2502/DevOps_Lab.git'
                 bat 'cd demo && mvn clean compile'
             }
         }
@@ -127,7 +127,7 @@ pipeline {
             agent { label 'test-node' }
             steps {
                 echo '🧪 Running tests on test-node...'
-                git branch: 'main', url: 'https://github.com/Abhishek-2502/task3.git'
+                git branch: 'Exp4', url: 'https://github.com/Abhishek-2502/DevOps_Lab.git'
                 bat 'cd demo1 && mvn test'
             }
         }
