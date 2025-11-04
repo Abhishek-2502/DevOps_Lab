@@ -1,191 +1,189 @@
-# 🛒 Retail App - Dockerized, Scanned & Signed with Docker Content Trust
+# 🚀 Jenkins Distributed Build Setup Guide
 
-This project demonstrates a full DevSecOps workflow for a Spring Boot-based **Retail Web Application**. The app is:
-- ✅ Dockerized and tested locally
-- 🔍 Scanned using Docker Scout for vulnerabilities
-- 🔐 Signed using Docker Content Trust (DCT)
-- ☁️ Pushed to DockerHub and pulled on another machine with signature verification
+This guide explains how to set up a *Jenkins Master* with two *Agent Nodes*, one for compilation and one for testing, using a simple Maven-based project.
 
 ---
 
-## 📚 Table of Contents
-1. [Prerequisites](#prerequisites)
-2. [Build and Run Locally](#build-and-run-locally)
-3. [Push to DockerHub](#push-to-dockerhub)
-4. [Scan with Docker Scout](#scan-with-docker-scout)
-5. [Enable Docker Content Trust DCT](#enable-docker-content-trust-dct)
-6. [Pull and Verify Signed Image on Another Machine](#pull-and-verify-signed-image-on-another-machine)
-6. [Summary](#summary)
-7. [Credits](#credits)
-8. [Authors](#authors)
+## 🪶 Step 1: Verify Jenkins is Running
 
+Open your browser and go to:
 
-## Prerequisites
+👉 [http://localhost:8080](http://localhost:8080)
 
-- Docker installed
-- Maven installed
-- DockerHub account
-- Docker Scout CLI (`docker scout version`)
-- (Optional) Two machines or terminals to test trust enforcement
+You should see the *Jenkins Dashboard*.
 
 ---
 
-## Build and Run Locally
+## 🪶 Step 2: Create Agent Folders
 
-Clone the Repo
-```bash
-git clone https://github.com/Abhishek-2502/DockerHub_Scout_DCT
-````
+In *Command Prompt*, run:
 
-Change directory
-```bash
-cd retail-app
-````
+```
+mkdir C:\jenkins-agent1
+mkdir C:\jenkins-agent2
+```
 
-Build the Spring Boot JAR
-```bash
-mvn clean install
-````
-
-Build Docker image
-```bash
-docker build -t retail-app:v1 .
-````
-
-Test the app locally
-```bash
-docker run -d -p 8080:8080 retail-app:v1
-````
-
-Visit: [http://localhost:8080/products](http://localhost:8080/products)
+These folders will act as the work directories for your Jenkins agents.
 
 ---
 
-## Push to DockerHub
+## 🪶 Step 3: Connect the First Agent (Compile Node)
 
-Login to DockerHub
-```bash
-docker login
+1. Go to *Manage Jenkins → Nodes → New Node*
+2. Enter the name *compile-node*
+3. Select *Permanent Agent* → click *OK*
+4. Fill the fields as follows:
+
+   
+   Remote root directory: C:\jenkins-agent1
+   
+   Labels: compile-node
+   
+   Usage: Use this node as much as possible
+   
+
+5. Click *Save*
+
+Now Jenkins shows a launch command under  
+*“Launch agent via Java Web Start”*.  
+It looks like this:
+
+```
+curl.exe -sO http://localhost:8080/jnlpJars/agent.jar & java -jar agent.jar -url http://localhost:8080/ -secret <SECRET> -name "compile-node" -webSocket -workDir "C:\jenkins-agent1"
 ```
 
-Tag the image
-```bash
-docker tag retail-app:v1 <dockerhub_username>/retail-app:v1
+Run it in *Command Prompt*:
+
+```
+cd C:\jenkins-agent1
+<PASTE THE COMMAND HERE>
 ```
 
-Push the image
-```bash
-docker push <dockerhub_username>/retail-app:v1
+✅ If successful, you’ll see:
+
+
+INFO: WebSocket connection open
+INFO: Connected
+
+
+Now your first agent is connected!
+
+---
+
+## 🪶 Step 4: Add the Second Agent (Test Node)
+
+Repeat the same process:
+
+1. Go to *Manage Jenkins → Nodes → New Node*
+2. Name it *test-node*
+3. Fill:
+
+   Remote root directory: C:\jenkins-agent2
+   
+   Labels: test-node
+   
+4. Click *Save*
+
+Copy the new *launch command* Jenkins gives and run it in CMD:
+
+```
+cd C:\jenkins-agent2
+<PASTE THE COMMAND HERE>
+```
+
+✅ You’ll see:
+
+
+INFO: WebSocket connection open
+INFO: Connected
+
+
+Now both agents are active and ready.
+
+---
+
+## 🪶 Step 5: Create the Jenkinsfile
+
+Inside `C:\jenkins-agent1` make a new file `Jenkinsfile`
+
+
+Paste this content inside the file:
+
+```
+pipeline {
+    agent none
+
+    stages {
+        stage('Compile') {
+            agent { label 'compile-node' }
+            steps {
+                echo '🔧 Compiling project on compile-node...'
+                git branch: 'main', url: 'https://github.com/Abhishek-2502/task3.git'
+                bat 'cd demo && mvn clean compile'
+            }
+        }
+
+        stage('Test') {
+            agent { label 'test-node' }
+            steps {
+                echo '🧪 Running tests on test-node...'
+                git branch: 'main', url: 'https://github.com/Abhishek-2502/task3.git'
+                bat 'cd demo1 && mvn test'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build and test stages completed successfully!'
+        }
+        failure {
+            echo '❌ Build or test failed. Please check logs.'
+        }
+    }
+}
 ```
 
 ---
 
-## Scan with Docker Scout
+## 🪶 Step 6: Create a Pipeline Job in Jenkins
 
-Quick image summary
-```bash
-docker scout quickview <dockerhub_username>/retail-app:v1
-```
-
-Software Bill of Materials (SBOM)
-```bash
-docker scout sbom <dockerhub_username>/retail-app:v1
-```
-
-View CVEs (vulnerabilities)
-```bash
-docker scout cves <dockerhub_username>/retail-app:v1
-```
-
-Recommendations (e.g. upgrade base image)
-```bash
-docker scout recommendations <dockerhub_username>/retail-app:v1
-```
+1. Go to the *Jenkins Dashboard*
+2. Click *New Item*
+3. Enter job name: *Distributed-Build*
+4. Choose *Pipeline* → click *OK*
+5. Scroll down to the *Pipeline* section
+6. Select *Pipeline script*
+7. Paste the same *Jenkinsfile* content
+8. Click *Save*
 
 ---
 
-## Enable Docker Content Trust DCT
+## 🪶 Step 7: Run the Pipeline
 
-### 1️⃣ Generate a Signing Key (first time only)
+Click *Build Now ▶️*
 
-Windows
-```bash
-$env:DOCKER_CONTENT_TRUST = "1"
-```
+You’ll see in the console logs:
 
-Linux
-```bash
-export DOCKER_CONTENT_TRUST=1
-```
 
-Generating Key
-```bash
-docker trust key generate abhishekkey
-```
+🔧 Compiling project on compile-node...
+🧪 Running tests on test-node...
+✅ Build and test stages completed successfully!
 
-### 2️⃣ Sign the Image and Push
 
-```bash
-docker trust sign <dockerhub_username>/retail-app:v1
-```
+That means:
 
-```bash
-docker push <dockerhub_username>/retail-app:v1
-```
-🔑 You'll be asked to enter strong passphrases for:
-
-* Your root key
-* The repository key
-* The signer key (abhishekkey)
-
-📝 These keys are stored securely under:
-`C:\Users\<YourName>\.docker\trust\private\`
+- *Compile stage* ran on → C:\jenkins-agent1
+- *Test stage* ran on → C:\jenkins-agent2
 
 ---
 
-## Pull and Verify Signed Image on Another Machine
+## 🎯 Result
 
-Enforce trust (Windows)
-```bash
-$env:DOCKER_CONTENT_TRUST = "1"
-```
+You’ve successfully set up a *Distributed Jenkins Pipeline* with:
 
-Enforce trust (Linux)
-```bash
-export DOCKER_CONTENT_TRUST=1
-```
+- 🖥️ Master (Jenkins)
+- 🧩 Agent 1 → compile-node
+- 🧪 Agent 2 → test-node
 
-Pull only if image is signed
-```bash
-docker pull <dockerhub_username>/retail-app:v1
-```
-
-✅ If the image is not signed or tampered with, the pull will **fail**.
-
----
-
-## Summary
-
-| Feature                     | Status      |
-| --------------------------- | ----------- |
-| Spring Boot App             | ✅ Completed |
-| Dockerized                  | ✅ Completed |
-| Scanned with Scout          | ✅ Completed |
-| Signed with DCT             | ✅ Completed |
-| Verified on another machine | ✅ Completed |
-
----
-
-## Credits
-
-* Docker Scout - [https://docs.docker.com/scout/](https://docs.docker.com/scout/)
-* Docker Content Trust - [https://docs.docker.com/engine/security/trust/](https://docs.docker.com/engine/security/trust/)
-
----
-
-## 🔐 Author
-
-**Abhishek Rajput**
-- Email: [abhishek25022004@gmail.com](mailto:abhishek25022004@gmail.com)
-- DockerHub: [abhi25022004](https://hub.docker.com/u/abhi25022004)
-
+Each stage runs on its assigned node — enabling parallel, scalable, and efficient CI/CD workflows!
