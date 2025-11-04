@@ -1,41 +1,46 @@
-# Project 9: Create apache2 server within a deployment and access it using host machine using commands learn using K8s
+# Project 8: Create deployments ,services,configmaps and secrets to containerize a complete application with at least 4 microservice
+## 1. Build images locally and push to registry (from project root):
 
-### 1. Create the Apache Deployment
 ```
-kubectl create deployment apache-deployment --image=httpd
-```
+docker build --no-cache -t abhi25022004/users:1.0 ./users
+docker push abhi25022004/users:1.0
 
-### 2. Expose the Deployment with a Service
-```
-kubectl expose deployment apache-deployment --type=NodePort --port=80
-```
+docker build --no-cache -t abhi25022004/posts:1.0 ./posts
+docker push abhi25022004/posts:1.0
 
-## OR USING DEPLOYMENT.YAML
+docker build --no-cache -t abhi25022004/api-gateway:1.0 ./api-gateway
+docker push abhi25022004/api-gateway:1.0
 
-###  1. Create Deployment & Service
-```
-kubectl apply -f deployment.yaml
+docker build --no-cache -t abhi25022004/frontend:1.0 ./frontend
+docker push abhi25022004/frontend:1.0
 ```
 
-###  2. Delete Resources
+## 2. Update images in K8s manifests (your-registry/...) to your pushed image names.
+
+## 3. Apply manifests:
+
 ```
-kubectl delete -f deployment.yaml
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml -n microapp
+kubectl apply -f k8s/secret.yaml -n microapp
+kubectl apply -R -f k8s/deployments -n microapp
+kubectl apply -R -f k8s/services -n microapp
 ```
 
+## 4. On Minikube, access frontend:
+```
+minikube service frontend-svc -n microapp
+```
 
-## 3. Access Your Apache Server using browser
+## 5. Other
+#### Restart the Kubernetes Deployment
 ```
-minikube service apache-deployment --url
+kubectl rollout restart deployment frontend-deploy -n microapp
 ```
 
-## Pods and Service Commands
+##### Verify the Rollout
 ```
-kubectl get pods
-kubectl get svc
-kubectl delete pod apache-deployment-7c4749fd9d-mwc64
-kubectl delete svc apache-deployment
-kubectl delete service apache-deployment
-kubectl delete deployment apache-deployment
+kubectl rollout status deployment/frontend-deploy -n microapp
 ```
 
 ## Author
