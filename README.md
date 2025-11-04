@@ -1,214 +1,191 @@
-# Docker
-#### Build: 
-```
-docker build -t social-media:latest .
-```
+# 🛒 Retail App - Dockerized, Scanned & Signed with Docker Content Trust
 
-# DockerHub
-```
-docker tag social-media:latest abhi25022004/social-media:latest
-```
-```
-docker push abhi25022004/social-media:latest
-```
+This project demonstrates a full DevSecOps workflow for a Spring Boot-based **Retail Web Application**. The app is:
+- ✅ Dockerized and tested locally
+- 🔍 Scanned using Docker Scout for vulnerabilities
+- 🔐 Signed using Docker Content Trust (DCT)
+- ☁️ Pushed to DockerHub and pulled on another machine with signature verification
 
-# CHOCOLATEY
-https://chocolatey.org/install
+---
 
-```
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-```
-
-# KUBERNETES
-https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/#install-nonstandard-package-tools
-
-#### Install
-```
-choco install kubernetes-cli
-```
-```
-kubectl version --client
-```
-
-#### If you're using cmd.exe: 
-```
-cd %USERPROFILE%
-```
-
-#### Otherwise: 
-```
-cd ~
-```
-```
-mkdir .kube
-cd .kube
-New-Item config -type file
-```
-```
-kubectl config view
-```
-
-# MINIKUBE
-https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
-
-#### Install
-```
-choco install minikube
-```
-
-#### Start
-```
-minikube start
-```
-```
-minikube start --driver=docker --no-vtx-check
-```
-```
-minikube start --driver=virtualbox
-```
-```
-minikube start --no-vtx-check
-```
-
-#### Other Basics
-```
-minikube dashboard
-```
-```
-minikube status
-```
-```
-minikube delete
-```
-```
-minikube delete --all
-```
-```
-minikube pause
-```
-```
-minikube unpause
-```
-```
-minikube stop
-```
-
-#### Metrics Service
-```
-minikube addons enable metrics-server
-kubectl get deployment metrics-server -n kube-system
-```
-
-#### To make docker the default driver:
-```
-minikube config set driver docker
-```
-
-#### Get Pods
-```
-kubectl get pods -A
-```
-```
-kubectl get pods
-```
-
-#### Delete Pod
-```
-kubectl delete pod pod_name
-```
+## 📚 Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Build and Run Locally](#build-and-run-locally)
+3. [Push to DockerHub](#push-to-dockerhub)
+4. [Scan with Docker Scout](#scan-with-docker-scout)
+5. [Enable Docker Content Trust DCT](#enable-docker-content-trust-dct)
+6. [Pull and Verify Signed Image on Another Machine](#pull-and-verify-signed-image-on-another-machine)
+6. [Summary](#summary)
+7. [Credits](#credits)
+8. [Authors](#authors)
 
 
+## Prerequisites
 
-## Pod.yaml
-```
-kubectl apply -f .\pod.yaml
-```
+- Docker installed
+- Maven installed
+- DockerHub account
+- Docker Scout CLI (`docker scout version`)
+- (Optional) Two machines or terminals to test trust enforcement
 
-#### Port Forward to Localhost
-```
-kubectl port-forward pod_name 8000:8000
-```
+---
 
-#### Test From Inside container
-```
-kubectl exec -it pod_name -- /bin/bash
-apt update && apt install curl -y
-curl http://127.0.0.1:8000
-exit
-```
+## Build and Run Locally
 
+Clone the Repo
+```bash
+git clone https://github.com/Abhishek-2502/DockerHub_Scout_DCT
+````
 
+Change directory
+```bash
+cd retail-app
+````
 
-## Deployment.yaml 
-```
-kubectl apply -f deployment.yaml
-```
-```
-kubectl get deployments
-```
-```
-kubectl port-forward deployment/social-media-deployment 8000:8000
-```
+Build the Spring Boot JAR
+```bash
+mvn clean install
+````
 
-```
-kubectl create deployment social-media-deployment --image=link
-kubectl delete deployment social-media-deployment
-kubectl expose deployment social-media-deployment --type=LoadBalancer --port=80
-```
+Build Docker image
+```bash
+docker build -t retail-app:v1 .
+````
 
+Test the app locally
+```bash
+docker run -d -p 8080:8080 retail-app:v1
+````
 
+Visit: [http://localhost:8080/products](http://localhost:8080/products)
 
-## Service.yaml (Require Deployment.yaml or Pod.yaml)
-```
-kubectl apply -f service.yaml
-```
-```
-kubectl get service
-```
+---
 
-#### To access it via browser (on Minikube):
-```
-minikube service service_name
+## Push to DockerHub
+
+Login to DockerHub
+```bash
+docker login
 ```
 
-
-
-## Horizontal Pod Autoscaler (HPA)
-
-#### This tells Kubernetes to:
-- Monitor CPU usage.
-- Keep pods between 1 and 5 replicas.
-- Scale out if CPU usage > 50%.
-
-```
-kubectl autoscale deployment social-media-deployment ^
-  --cpu-percent=50 ^
-  --min=1 ^
-  --max=5
+Tag the image
+```bash
+docker tag retail-app:v1 <dockerhub_username>/retail-app:v1
 ```
 
-#### Check the HPA status:
-```
-kubectl get hpa
-```
-
-#### Delete HPA
-```
-kubectl delete hpa social-media-deployment
+Push the image
+```bash
+docker push <dockerhub_username>/retail-app:v1
 ```
 
-#### Testing:
-```
-kubectl run -i --tty load-generator --rm ^
-  --image=busybox ^
-  -- /bin/sh
+---
 
-while true; do wget -q -O- http://social-media-service:8000; done
+## Scan with Docker Scout
+
+Quick image summary
+```bash
+docker scout quickview <dockerhub_username>/retail-app:v1
 ```
 
-Watch for replica count increasing:
+Software Bill of Materials (SBOM)
+```bash
+docker scout sbom <dockerhub_username>/retail-app:v1
 ```
-kubectl get hpa -w
-kubectl get pods
+
+View CVEs (vulnerabilities)
+```bash
+docker scout cves <dockerhub_username>/retail-app:v1
 ```
+
+Recommendations (e.g. upgrade base image)
+```bash
+docker scout recommendations <dockerhub_username>/retail-app:v1
+```
+
+---
+
+## Enable Docker Content Trust DCT
+
+### 1️⃣ Generate a Signing Key (first time only)
+
+Windows
+```bash
+$env:DOCKER_CONTENT_TRUST = "1"
+```
+
+Linux
+```bash
+export DOCKER_CONTENT_TRUST=1
+```
+
+Generating Key
+```bash
+docker trust key generate abhishekkey
+```
+
+### 2️⃣ Sign the Image and Push
+
+```bash
+docker trust sign <dockerhub_username>/retail-app:v1
+```
+
+```bash
+docker push <dockerhub_username>/retail-app:v1
+```
+🔑 You'll be asked to enter strong passphrases for:
+
+* Your root key
+* The repository key
+* The signer key (abhishekkey)
+
+📝 These keys are stored securely under:
+`C:\Users\<YourName>\.docker\trust\private\`
+
+---
+
+## Pull and Verify Signed Image on Another Machine
+
+Enforce trust (Windows)
+```bash
+$env:DOCKER_CONTENT_TRUST = "1"
+```
+
+Enforce trust (Linux)
+```bash
+export DOCKER_CONTENT_TRUST=1
+```
+
+Pull only if image is signed
+```bash
+docker pull <dockerhub_username>/retail-app:v1
+```
+
+✅ If the image is not signed or tampered with, the pull will **fail**.
+
+---
+
+## Summary
+
+| Feature                     | Status      |
+| --------------------------- | ----------- |
+| Spring Boot App             | ✅ Completed |
+| Dockerized                  | ✅ Completed |
+| Scanned with Scout          | ✅ Completed |
+| Signed with DCT             | ✅ Completed |
+| Verified on another machine | ✅ Completed |
+
+---
+
+## Credits
+
+* Docker Scout - [https://docs.docker.com/scout/](https://docs.docker.com/scout/)
+* Docker Content Trust - [https://docs.docker.com/engine/security/trust/](https://docs.docker.com/engine/security/trust/)
+
+---
+
+## 🔐 Author
+
+**Abhishek Rajput**
+- Email: [abhishek25022004@gmail.com](mailto:abhishek25022004@gmail.com)
+- DockerHub: [abhi25022004](https://hub.docker.com/u/abhi25022004)
 
