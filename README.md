@@ -10,6 +10,10 @@ Open your browser and go to:
 
 👉 [http://localhost:8080](http://localhost:8080)
 
+NOTE: Use Jenkins.msi to install Jenkins instead using it from Docker.
+
+https://www.jenkins.io/download/
+
 You should see the *Jenkins Dashboard*.
 
 ---
